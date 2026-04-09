@@ -12,17 +12,17 @@ body {
   background: #f7f7f7;
 }
 
-/* Eredivisie logo rechtsboven */
 #eredivisie-logo {
   position: fixed;
   top: 10px;
   right: 10px;
   width: 80px;
   opacity: 0.15;
-  z-index: 0;
 }
 
+
 h2 { margin-bottom: 6px; }
+
 select { font-size: 16px; margin-bottom: 10px; }
 
 .match {
@@ -52,20 +52,6 @@ th, td {
 .pos3 { background:#1e90ff; color:#fff; }
 .pos4 { background:#ffd700; color:#000; }
 .pos5, .pos6, .pos7 { background:#c00; color:#fff; }
-
-/* Team + logo */
-.teamcell {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  justify-content: center;
-}
-
-.teamcell img {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-}
 
 /* Tickets */
 .badge {
@@ -130,17 +116,7 @@ Bekerwinnaar:
 <div id="playoffs" class="small"></div>
 
 <script>
-// ===== TEAM LOGO'S =====
-const teamLogos = {
-  "AJAX": "logos/ajax.png",
-  "Az": "logos/az.png",
-  "Nec": "logos/nec.png",
-  "Twente": "logos/twente.png",
-  "Heerenveen": "logos/heerenveen.png",
-  "Kakkies": "logos/kakkies.png"
-};
-
-// ===== TEAMS =====
+// ================= CONFIG =================
 const focusTeams = ["Kakkies","Nec","Twente","AJAX","Az","Heerenveen"];
 
 const startStand = {
@@ -152,31 +128,35 @@ const startStand = {
   Heerenveen:{p:44,ds:6}
 };
 
-// ===== WEDSTRIJDEN =====
 const wedstrijden = [
+  // SR 30
   {r:30,t:"Nec",u:"Kakkies",tg:3,ug:1},
   {r:30,t:"Twente",u:"Volendam",tg:3,ug:1},
   {r:30,t:"Heracles",u:"AJAX",tg:1,ug:3},
   {r:30,t:"Az",u:"Heerenveen",tg:3,ug:2},
 
+  // SR 31
   {r:31,t:"Kakkies",u:"Groningen",tg:2,ug:1},
   {r:31,t:"Twente",u:"Nec",tg:1,ug:2},
   {r:31,t:"NAC",u:"AJAX",tg:1,ug:2},
   {r:31,t:"Fortuna",u:"Heerenveen",tg:1,ug:2},
   {r:31,t:"GAE",u:"Az",tg:2,ug:2},
 
+  // SR 32
   {r:32,t:"Fortuna",u:"Kakkies",tg:1,ug:2},
   {r:32,t:"Nec",u:"Telstar",tg:2,ug:1},
   {r:32,t:"Twente",u:"Az",tg:3,ug:2},
   {r:32,t:"AJAX",u:"PSV",tg:3,ug:2},
   {r:32,t:"Volendam",u:"Heerenveen",tg:1,ug:3},
 
+  // SR 33
   {r:33,t:"Kakkies",u:"Az",tg:2,ug:2},
   {r:33,t:"Groningen",u:"Nec",tg:0,ug:1},
   {r:33,t:"Twente",u:"Sparta",tg:2,ug:1},
   {r:33,t:"AJAX",u:"Utreg",tg:3,ug:0},
   {r:33,t:"NAC",u:"Heerenveen",tg:0,ug:3},
 
+  // SR 34
   {r:34,t:"PEC",u:"Kakkies",tg:1,ug:3},
   {r:34,t:"Nec",u:"GAE",tg:2,ug:1},
   {r:34,t:"PSV",u:"Twente",tg:1,ug:2},
@@ -184,82 +164,135 @@ const wedstrijden = [
   {r:34,t:"Az",u:"NAC",tg:5,ug:0}
 ];
 
-// ===== LOGICA =====
+// ================= CORE =================
 function berekenStand(tot) {
   const s = JSON.parse(JSON.stringify(startStand));
-  wedstrijden.forEach(w=>{
-    if(w.r>tot) return;
-    const tg=+w.tg, ug=+w.ug;
-    if(s[w.t]){ s[w.t].ds+=tg-ug; if(tg>ug) s[w.t].p+=3; if(tg===ug) s[w.t].p++; }
-    if(s[w.u]){ s[w.u].ds+=ug-tg; if(ug>tg) s[w.u].p+=3; if(tg===ug) s[w.u].p++; }
+
+  wedstrijden.forEach(w => {
+    if (w.r > tot) return;
+    const tg = Number(w.tg), ug = Number(w.ug);
+
+    if (s[w.t]) {
+      s[w.t].ds += tg - ug;
+      if (tg > ug) s[w.t].p += 3;
+      if (tg === ug) s[w.t].p += 1;
+    }
+    if (s[w.u]) {
+      s[w.u].ds += ug - tg;
+      if (ug > tg) s[w.u].p += 3;
+      if (tg === ug) s[w.u].p += 1;
+    }
   });
   return s;
 }
 
-function updateScore(i,f,v){ wedstrijden[i][f]=+v; update(); }
+function updateScore(i,f,v) {
+  wedstrijden[i][f] = Number(v);
+  update();
+}
 
-// ===== TICKETS (FINAAL) =====
-function bepaalTickets(ranking,beker){
-  const tickets={},playoffs=new Set();
-  ranking.forEach((t,i)=>{
-    const pos=i+2;
-    if(pos===2) tickets[t.team]="CL";
-    else if(pos===3) tickets[t.team]="CLQ";
-    else if(pos===4) tickets[t.team]="ELQ";
-    else if(pos>=5&&pos<=7) playoffs.add(t.team);
+// ================= TICKETS =================
+function bepaalTickets(ranking, bekerWinnaar) {
+  const tickets = {};
+  const playoffs = new Set();
+
+  // 1. Basis op competitie
+  ranking.forEach((team, i) => {
+    const pos = i + 2;
+    if (pos === 2) tickets[team.team] = "CL";
+    else if (pos === 3) tickets[team.team] = "CLQ";
+    else if (pos === 4) tickets[team.team] = "ELQ";
+    else if (pos >= 5 && pos <= 7) playoffs.add(team.team);
   });
-  if(!beker) return {tickets,playoffs};
 
-  const bIdx=ranking.findIndex(r=>r.team===beker);
-  const elTeam = bIdx+2>=4 ? beker : ranking[2]?.team;
-  tickets[elTeam]="EL"; playoffs.delete(elTeam);
-
-  Object.keys(tickets).forEach(t=>{ if(tickets[t]==="ELQ" && t!==elTeam) delete tickets[t]; });
-
-  for(let i=2;i<ranking.length;i++){
-    const t=ranking[i].team;
-    if(!tickets[t]){ tickets[t]="ELQ"; playoffs.delete(t); break; }
+  if (!bekerWinnaar) {
+    return { tickets, playoffs };
   }
 
-  return {tickets,playoffs};
+  const bekerIndex = ranking.findIndex(t => t.team === bekerWinnaar);
+  const bekerPos = bekerIndex !== -1 ? bekerIndex + 2 : null;
+
+  // 2. Bepaal wie Europa League (direct) krijgt
+  let elTeam = null;
+
+  if (bekerPos >= 4) {
+    // bekerwinnaar mag upgraden
+    elTeam = bekerWinnaar;
+  } else {
+    // bekerwinnaar is 2e of 3e → EL gaat naar positie 4
+    elTeam = ranking.find((_, i) => i + 2 === 4)?.team;
+  }
+
+  if (elTeam) {
+    tickets[elTeam] = "EL";
+    playoffs.delete(elTeam);
+  }
+
+  // 3. Verwijder oude ELQ op positie 4 (als die er was)
+  Object.keys(tickets).forEach(t => {
+    if (tickets[t] === "ELQ") delete tickets[t];
+  });
+
+  // 4. Ken exact één EL-voorronde toe
+  for (let i = 2; i < ranking.length; i++) {
+    const team = ranking[i].team;
+    if (!tickets[team]) {
+      tickets[team] = "ELQ";
+      playoffs.delete(team);
+      break;
+    }
+  }
+
+  return { tickets, playoffs };
+}
+function badge(t) {
+  if (t==="CL")  return `<span class="badge cl">Champions League</span>`;
+  if (t==="CLQ") return `<span class="badge clq">CL voorronde</span>`;
+  if (t==="EL")  return `<span class="badge el">Europa League</span>`;
+  if (t==="ELQ") return `<span class="badge elq">EL voorronde</span>`;
+  return "-";
 }
 
-function badge(t){
-  return {
-    CL:'<span class="badge cl">Champions League</span>',
-    CLQ:'<span class="badge clq">CL voorronde</span>',
-    EL:'<span class="badge el">Europa League</span>',
-    ELQ:'<span class="badge elq">EL voorronde</span>'
-  }[t]||'-';
-}
+// ================= UI =================
+function update() {
+  const ronde = Number(document.getElementById("ronde").value);
+  const beker = document.getElementById("beker").value || null;
 
-// ===== UI =====
-function update(){
-  const ronde=+document.getElementById("ronde").value;
-  const beker=document.getElementById("beker").value||null;
-
-  document.getElementById("matches").innerHTML=
-    wedstrijden.map((w,i)=>({w,i})).filter(x=>x.w.r===ronde)
+  // Wedstrijden
+  document.getElementById("matches").innerHTML =
+    wedstrijden.map((w,i)=>({w,i}))
+      .filter(x=>x.w.r===ronde)
       .map(x=>`
         <div class="match">
           <span>${x.w.t}</span>
-          <input type="number" value="${x.w.tg}" onchange="updateScore(${x.i},'tg',this.value)">
+          <input type="number" value="${x.w.tg}"
+            onchange="updateScore(${x.i},'tg',this.value)">
           -
-          <input type="number" value="${x.w.ug}" onchange="updateScore(${x.i},'ug',this.value)">
+          <input type="number" value="${x.w.ug}"
+            onchange="updateScore(${x.i},'ug',this.value)">
           <span>${x.w.u}</span>
         </div>`).join("");
 
-  const stand=berekenStand(ronde);
-  const ranking=focusTeams.map(t=>({team:t,...stand[t]})).sort((a,b)=>b.p-a.p||b.ds-a.ds);
-  const {tickets,playoffs}=bepaalTickets(ranking,beker);
+  const stand = berekenStand(ronde);
+  const ranking = focusTeams
+    .map(t=>({team:t,...stand[t]}))
+    .sort((a,b)=>b.p-a.p||b.ds-a.ds);
 
-  document.getElementById("table").innerHTML=
-    ranking.map((x,i)=>`
-      <tr class="pos${i+2}">
-        <td>${i+2}</td>
-        <td class="teamcell"><img src="${team <td>${x.ds}</td>
-        <td>${tickets[x.team]?badge(tickets[x.team]):playoffs.has(x.team)?'<span class="badge po">Play-off Conference</span>':'-'}</td>
-      </tr>`).join("");
+  const {tickets,playoffs} = bepaalTickets(ranking, beker);
+
+  document.getElementById("table").innerHTML =
+    ranking.map((x,i)=>{
+      const pos = i + 2;
+      return `
+        <tr class="pos${pos}">
+          <td>${pos}</td>
+          <td>${x.team}</td>
+          <td>${x.p}</td>
+          <td>${x.ds}</td>
+          <td>${tickets[x.team] ? badge(tickets[x.team]) :
+               playoffs.has(x.team) ? `<span class="badge po">Play-off Conference</span>` : "-"}</td>
+        </tr>`;
+    }).join("");
 
   document.getElementById("playoffs").innerText =
     Array.from(playoffs).join(", ") || "—";
