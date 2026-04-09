@@ -9,83 +9,138 @@
 body {
   font-family: Arial, sans-serif;
   margin: 12px;
-  background-image: url("eredivisie-logo.png");
-  background-repeat: no-repeat;
-  background-position: center 120px;
-  background-size: 80%;
-  background-attachment: fixed;
+  background: #f7f7f7;
 }
 
-select, button { font-size:16px; margin-bottom:10px; }
+/* Eredivisie logo rechtsboven */
+#eredivisie-logo {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  width: 80px;
+  opacity: 0.15;
+  z-index: 0;
+}
+
+h2 { margin-bottom: 6px; }
+select { font-size: 16px; margin-bottom: 10px; }
 
 .match {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin:6px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 6px 0;
 }
-.match span { width:90px; text-align:center; }
-.match input { width:44px; text-align:center; }
+.match span { width: 90px; text-align: center; }
+.match input { width: 44px; text-align: center; font-size: 16px; }
 
 table {
-  width:100%;
-  border-collapse:collapse;
-  margin-top:12px;
-}
-th, td {
-  border:1px solid #ccc;
-  padding:6px;
-  text-align:center;
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  background: #fff;
 }
 
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px;
+  text-align: center;
+}
+
+/* Positiekleuren */
 .pos2 { background:#2e8b57; color:#fff; }
 .pos3 { background:#1e90ff; color:#fff; }
 .pos4 { background:#ffd700; color:#000; }
-.pos5,.pos6,.pos7 { background:#c00; color:#fff; }
+.pos5, .pos6, .pos7 { background:#c00; color:#fff; }
 
-.team {
-  cursor:pointer;
-  font-weight:bold;
+/* Team + logo */
+.teamcell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
 }
 
-.small {
-  font-size:13px;
-  opacity:.9;
+.teamcell img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
 }
+
+/* Tickets */
+.badge {
+  display: inline-block;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.cl  { background:#0b6623; color:#fff; }
+.clq { background:#2e8b57; color:#fff; }
+.el  { background:#ff8c00; color:#fff; }
+.elq { background:#ffa500; color:#000; }
+.po  { background:#555; color:#fff; }
+
+.small { font-size: 13px; opacity: .9; }
 </style>
 </head>
 
 <body>
 
-<h2>Stand Eredivisie (posities 2–7)</h2>
+<img id="eredivisie-logo" src="eredivisie.png" alt="Eredivisie">
 
+<h2>Eredivisie Simulator</h2>
+
+Speelronde:
 <select id="ronde" onchange="update()">
-  <option value="30">Speelronde 30</option>
-  <option value="31">Speelronde 31</option>
-  <option value="32">Speelronde 32</option>
-  <option value="33">Speelronde 33</option>
-  <option value="34" selected>Speelronde 34</option>
+  <option value="30">30</option>
+  <option value="31">31</option>
+  <option value="32">32</option>
+  <option value="33">33</option>
+  <option value="34" selected>34</option>
+</select>
+
+Bekerwinnaar:
+<select id="beker" onchange="update()">
+  <option value="">Geen</option>
+  <option value="Nec">NEC</option>
+  <option value="Az">AZ</option>
 </select>
 
 <h3>Wedstrijden</h3>
 <div id="matches"></div>
 
-<h3>Stand</h3>
+<h3>Stand (posities 2 t/m 7)</h3>
 <table>
 <thead>
 <tr>
   <th>Pos</th>
-  <th></th>
   <th>Team</th>
   <th>Pnt</th>
   <th>DS</th>
+  <th>Europees ticket</th>
 </tr>
 </thead>
 <tbody id="table"></tbody>
 </table>
 
+<h3>Play-offs Conference League</h3>
+<div id="playoffs" class="small"></div>
+
 <script>
-// === CONFIG ===
+// ===== TEAM LOGO'S =====
+const teamLogos = {
+  "AJAX": "logos/ajax.png",
+  "Az": "logos/az.png",
+  "Nec": "logos/nec.png",
+  "Twente": "logos/twente.png",
+  "Heerenveen": "logos/heerenveen.png",
+  "Kakkies": "logos/kakkies.png"
+};
+
+// ===== TEAMS =====
 const focusTeams = ["Kakkies","Nec","Twente","AJAX","Az","Heerenveen"];
 
 const startStand = {
@@ -97,99 +152,117 @@ const startStand = {
   Heerenveen:{p:44,ds:6}
 };
 
+// ===== WEDSTRIJDEN =====
 const wedstrijden = [
- {r:30,t:"Nec",u:"Kakkies",tg:3,ug:1},
- {r:30,t:"Twente",u:"Volendam",tg:3,ug:1},
- {r:30,t:"Heracles",u:"AJAX",tg:1,ug:3},
- {r:30,t:"Az",u:"Heerenveen",tg:3,ug:2},
+  {r:30,t:"Nec",u:"Kakkies",tg:3,ug:1},
+  {r:30,t:"Twente",u:"Volendam",tg:3,ug:1},
+  {r:30,t:"Heracles",u:"AJAX",tg:1,ug:3},
+  {r:30,t:"Az",u:"Heerenveen",tg:3,ug:2},
 
- {r:31,t:"Kakkies",u:"Groningen",tg:2,ug:1},
- {r:31,t:"Twente",u:"Nec",tg:1,ug:2},
- {r:31,t:"NAC",u:"AJAX",tg:1,ug:2},
- {r:31,t:"Fortuna",u:"Heerenveen",tg:1,ug:2},
+  {r:31,t:"Kakkies",u:"Groningen",tg:2,ug:1},
+  {r:31,t:"Twente",u:"Nec",tg:1,ug:2},
+  {r:31,t:"NAC",u:"AJAX",tg:1,ug:2},
+  {r:31,t:"Fortuna",u:"Heerenveen",tg:1,ug:2},
+  {r:31,t:"GAE",u:"Az",tg:2,ug:2},
 
- {r:32,t:"Fortuna",u:"Kakkies",tg:1,ug:2},
- {r:32,t:"Nec",u:"Telstar",tg:2,ug:1},
- {r:32,t:"Twente",u:"Az",tg:3,ug:2},
- {r:32,t:"AJAX",u:"PSV",tg:3,ug:2},
- {r:32,t:"Volendam",u:"Heerenveen",tg:1,ug:3},
+  {r:32,t:"Fortuna",u:"Kakkies",tg:1,ug:2},
+  {r:32,t:"Nec",u:"Telstar",tg:2,ug:1},
+  {r:32,t:"Twente",u:"Az",tg:3,ug:2},
+  {r:32,t:"AJAX",u:"PSV",tg:3,ug:2},
+  {r:32,t:"Volendam",u:"Heerenveen",tg:1,ug:3},
 
- {r:33,t:"Kakkies",u:"Az",tg:2,ug:2},
- {r:33,t:"Groningen",u:"Nec",tg:0,ug:1},
- {r:33,t:"Twente",u:"Sparta",tg:2,ug:1},
- {r:33,t:"AJAX",u:"Utreg",tg:3,ug:0},
- {r:33,t:"NAC",u:"Heerenveen",tg:0,ug:3},
+  {r:33,t:"Kakkies",u:"Az",tg:2,ug:2},
+  {r:33,t:"Groningen",u:"Nec",tg:0,ug:1},
+  {r:33,t:"Twente",u:"Sparta",tg:2,ug:1},
+  {r:33,t:"AJAX",u:"Utreg",tg:3,ug:0},
+  {r:33,t:"NAC",u:"Heerenveen",tg:0,ug:3},
 
- {r:34,t:"PEC",u:"Kakkies",tg:1,ug:3},
- {r:34,t:"Nec",u:"GAE",tg:2,ug:1},
- {r:34,t:"PSV",u:"Twente",tg:1,ug:2},
- {r:34,t:"Heerenveen",u:"AJAX",tg:1,ug:4},
- {r:34,t:"Az",u:"NAC",tg:5,ug:0}
+  {r:34,t:"PEC",u:"Kakkies",tg:1,ug:3},
+  {r:34,t:"Nec",u:"GAE",tg:2,ug:1},
+  {r:34,t:"PSV",u:"Twente",tg:1,ug:2},
+  {r:34,t:"Heerenveen",u:"AJAX",tg:1,ug:4},
+  {r:34,t:"Az",u:"NAC",tg:5,ug:0}
 ];
 
-// === CORE ===
-function berekenStand(totRonde) {
-  const stand = JSON.parse(JSON.stringify(startStand));
-
-  wedstrijden.forEach(w => {
-    if (w.r > totRonde) return;
-
-    const tg = Number(w.tg);
-    const ug = Number(w.ug);
-
-    const thuisRelevant = !!stand[w.t];
-    const uitRelevant   = !!stand[w.u];
-    if (!thuisRelevant && !uitRelevant) return;
-
-    // Doelsaldo
-    if (thuisRelevant) stand[w.t].ds += tg - ug;
-    if (uitRelevant)   stand[w.u].ds += ug - tg;
-
-    // Punten
-    if (tg > ug) {
-      if (thuisRelevant) stand[w.t].p += 3;
-    } else if (tg < ug) {
-      if (uitRelevant) stand[w.u].p += 3;
-    } else {
-      if (thuisRelevant) stand[w.t].p += 1;
-      if (uitRelevant)   stand[w.u].p += 1;
-    }
+// ===== LOGICA =====
+function berekenStand(tot) {
+  const s = JSON.parse(JSON.stringify(startStand));
+  wedstrijden.forEach(w=>{
+    if(w.r>tot) return;
+    const tg=+w.tg, ug=+w.ug;
+    if(s[w.t]){ s[w.t].ds+=tg-ug; if(tg>ug) s[w.t].p+=3; if(tg===ug) s[w.t].p++; }
+    if(s[w.u]){ s[w.u].ds+=ug-tg; if(ug>tg) s[w.u].p+=3; if(tg===ug) s[w.u].p++; }
   });
-
-  return stand;
+  return s;
 }
 
-function update(){
-  const ronde = Number(document.getElementById("ronde").value);
-  const stand = berekenStand(ronde);
+function updateScore(i,f,v){ wedstrijden[i][f]=+v; update(); }
 
-  document.getElementById("matches").innerHTML =
-    wedstrijden.map((w,i)=>({w,i}))
-      .filter(x=>x.w.r===ronde)
+// ===== TICKETS (FINAAL) =====
+function bepaalTickets(ranking,beker){
+  const tickets={},playoffs=new Set();
+  ranking.forEach((t,i)=>{
+    const pos=i+2;
+    if(pos===2) tickets[t.team]="CL";
+    else if(pos===3) tickets[t.team]="CLQ";
+    else if(pos===4) tickets[t.team]="ELQ";
+    else if(pos>=5&&pos<=7) playoffs.add(t.team);
+  });
+  if(!beker) return {tickets,playoffs};
+
+  const bIdx=ranking.findIndex(r=>r.team===beker);
+  const elTeam = bIdx+2>=4 ? beker : ranking[2]?.team;
+  tickets[elTeam]="EL"; playoffs.delete(elTeam);
+
+  Object.keys(tickets).forEach(t=>{ if(tickets[t]==="ELQ" && t!==elTeam) delete tickets[t]; });
+
+  for(let i=2;i<ranking.length;i++){
+    const t=ranking[i].team;
+    if(!tickets[t]){ tickets[t]="ELQ"; playoffs.delete(t); break; }
+  }
+
+  return {tickets,playoffs};
+}
+
+function badge(t){
+  return {
+    CL:'<span class="badge cl">Champions League</span>',
+    CLQ:'<span class="badge clq">CL voorronde</span>',
+    EL:'<span class="badge el">Europa League</span>',
+    ELQ:'<span class="badge elq">EL voorronde</span>'
+  }[t]||'-';
+}
+
+// ===== UI =====
+function update(){
+  const ronde=+document.getElementById("ronde").value;
+  const beker=document.getElementById("beker").value||null;
+
+  document.getElementById("matches").innerHTML=
+    wedstrijden.map((w,i)=>({w,i})).filter(x=>x.w.r===ronde)
       .map(x=>`
         <div class="match">
           <span>${x.w.t}</span>
-          <input type="number" value="${x.w.tg}"
-            onchange="wedstrijden[${x.i}].tg=this.value;update()">
+          <input type="number" value="${x.w.tg}" onchange="updateScore(${x.i},'tg',this.value)">
           -
-          <input type="number" value="${x.w.ug}"
-            onchange="wedstrijden[${x.i}].ug=this.value;update()">
+          <input type="number" value="${x.w.ug}" onchange="updateScore(${x.i},'ug',this.value)">
           <span>${x.w.u}</span>
         </div>`).join("");
 
-  const rows = focusTeams
-    .map(t=>({team:t,...stand[t]}))
-    .sort((a,b)=>b.p-a.p||b.ds-a.ds);
+  const stand=berekenStand(ronde);
+  const ranking=focusTeams.map(t=>({team:t,...stand[t]})).sort((a,b)=>b.p-a.p||b.ds-a.ds);
+  const {tickets,playoffs}=bepaalTickets(ranking,beker);
 
-  document.getElementById("table").innerHTML =
-    rows.map((x,i)=>`
+  document.getElementById("table").innerHTML=
+    ranking.map((x,i)=>`
       <tr class="pos${i+2}">
         <td>${i+2}</td>
-        <td></td>
-        <td>${x.team}</td>
-        <td>${x.p}</td>
-        <td>${x.ds}</td>
+        <td class="teamcell"><img src="${team <td>${x.ds}</td>
+        <td>${tickets[x.team]?badge(tickets[x.team]):playoffs.has(x.team)?'<span class="badge po">Play-off Conference</span>':'-'}</td>
       </tr>`).join("");
+
+  document.getElementById("playoffs").innerText =
+    Array.from(playoffs).join(", ") || "—";
 }
 
 update();
