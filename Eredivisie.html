@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Eredivisie Stand Simulator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 12px;
+  background-image: url("eredivisie-logo.png");
+  background-repeat: no-repeat;
+  background-position: center 120px;
+  background-size: 80%;
+  background-attachment: fixed;
+}
+
+select, button { font-size:16px; margin-bottom:10px; }
+
+.match {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:6px 0;
+}
+.match span { width:90px; text-align:center; }
+.match input { width:44px; text-align:center; }
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  margin-top:12px;
+}
+th, td {
+  border:1px solid #ccc;
+  padding:6px;
+  text-align:center;
+}
+
+.pos2 { background:#2e8b57; color:#fff; }
+.pos3 { background:#1e90ff; color:#fff; }
+.pos4 { background:#ffd700; color:#000; }
+.pos5,.pos6,.pos7 { background:#c00; color:#fff; }
+
+.team {
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.small {
+  font-size:13px;
+  opacity:.9;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Stand Eredivisie (posities 2–7)</h2>
+
+<select id="ronde" onchange="update()">
+  <option value="30">Speelronde 30</option>
+  <option value="31">Speelronde 31</option>
+  <option value="32">Speelronde 32</option>
+  <option value="33">Speelronde 33</option>
+  <option value="34" selected>Speelronde 34</option>
+</select>
+
+<h3>Wedstrijden</h3>
+<div id="matches"></div>
+
+<h3>Stand</h3>
+<table>
+<thead>
+<tr>
+  <th>Pos</th>
+  <th></th>
+  <th>Team</th>
+  <th>Pnt</th>
+  <th>DS</th>
+</tr>
+</thead>
+<tbody id="table"></tbody>
+</table>
+
+<script>
+// === CONFIG ===
+const focusTeams = ["Kakkies","Nec","Twente","AJAX","Az","Heerenveen"];
+
+const startStand = {
+  Kakkies:{p:54,ds:21},
+  Nec:{p:53,ds:24},
+  Twente:{p:50,ds:18},
+  AJAX:{p:48,ds:17},
+  Az:{p:45,ds:4},
+  Heerenveen:{p:44,ds:6}
+};
+
+const wedstrijden = [
+ {r:30,t:"Nec",u:"Kakkies",tg:3,ug:1},
+ {r:30,t:"Twente",u:"Volendam",tg:3,ug:1},
+ {r:30,t:"Heracles",u:"AJAX",tg:1,ug:3},
+ {r:30,t:"Az",u:"Heerenveen",tg:3,ug:2},
+
+ {r:31,t:"Kakkies",u:"Groningen",tg:2,ug:1},
+ {r:31,t:"Twente",u:"Nec",tg:1,ug:2},
+ {r:31,t:"NAC",u:"AJAX",tg:1,ug:2},
+ {r:31,t:"Fortuna",u:"Heerenveen",tg:1,ug:2},
+
+ {r:32,t:"Fortuna",u:"Kakkies",tg:1,ug:2},
+ {r:32,t:"Nec",u:"Telstar",tg:2,ug:1},
+ {r:32,t:"Twente",u:"Az",tg:3,ug:2},
+ {r:32,t:"AJAX",u:"PSV",tg:3,ug:2},
+ {r:32,t:"Volendam",u:"Heerenveen",tg:1,ug:3},
+
+ {r:33,t:"Kakkies",u:"Az",tg:2,ug:2},
+ {r:33,t:"Groningen",u:"Nec",tg:0,ug:1},
+ {r:33,t:"Twente",u:"Sparta",tg:2,ug:1},
+ {r:33,t:"AJAX",u:"Utreg",tg:3,ug:0},
+ {r:33,t:"NAC",u:"Heerenveen",tg:0,ug:3},
+
+ {r:34,t:"PEC",u:"Kakkies",tg:1,ug:3},
+ {r:34,t:"Nec",u:"GAE",tg:2,ug:1},
+ {r:34,t:"PSV",u:"Twente",tg:1,ug:2},
+ {r:34,t:"Heerenveen",u:"AJAX",tg:1,ug:4},
+ {r:34,t:"Az",u:"NAC",tg:5,ug:0}
+];
+
+// === CORE ===
+function berekenStand(totRonde) {
+  const stand = JSON.parse(JSON.stringify(startStand));
+
+  wedstrijden.forEach(w => {
+    if (w.r > totRonde) return;
+
+    const tg = Number(w.tg);
+    const ug = Number(w.ug);
+
+    const thuisRelevant = !!stand[w.t];
+    const uitRelevant   = !!stand[w.u];
+    if (!thuisRelevant && !uitRelevant) return;
+
+    // Doelsaldo
+    if (thuisRelevant) stand[w.t].ds += tg - ug;
+    if (uitRelevant)   stand[w.u].ds += ug - tg;
+
+    // Punten
+    if (tg > ug) {
+      if (thuisRelevant) stand[w.t].p += 3;
+    } else if (tg < ug) {
+      if (uitRelevant) stand[w.u].p += 3;
+    } else {
+      if (thuisRelevant) stand[w.t].p += 1;
+      if (uitRelevant)   stand[w.u].p += 1;
+    }
+  });
+
+  return stand;
+}
+
+function update(){
+  const ronde = Number(document.getElementById("ronde").value);
+  const stand = berekenStand(ronde);
+
+  document.getElementById("matches").innerHTML =
+    wedstrijden.map((w,i)=>({w,i}))
+      .filter(x=>x.w.r===ronde)
+      .map(x=>`
+        <div class="match">
+          <span>${x.w.t}</span>
+          <input type="number" value="${x.w.tg}"
+            onchange="wedstrijden[${x.i}].tg=this.value;update()">
+          -
+          <input type="number" value="${x.w.ug}"
+            onchange="wedstrijden[${x.i}].ug=this.value;update()">
+          <span>${x.w.u}</span>
+        </div>`).join("");
+
+  const rows = focusTeams
+    .map(t=>({team:t,...stand[t]}))
+    .sort((a,b)=>b.p-a.p||b.ds-a.ds);
+
+  document.getElementById("table").innerHTML =
+    rows.map((x,i)=>`
+      <tr class="pos${i+2}">
+        <td>${i+2}</td>
+        <td></td>
+        <td>${x.team}</td>
+        <td>${x.p}</td>
+        <td>${x.ds}</td>
+      </tr>`).join("");
+}
+
+update();
+</script>
+</body>
+</html>
