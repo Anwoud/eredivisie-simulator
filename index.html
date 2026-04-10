@@ -70,6 +70,52 @@ th, td {
 .po  { background:#555; color:#fff; }
 
 .small { font-size: 13px; opacity: .9; }
+
+.teamcell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.teamcell img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+
+.match-team {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 90px;
+  justify-content: center;
+}
+
+.match-team img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.ticket {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
+
+.ticket img {
+  width: 20px;
+  height: 20px;
+}
+
+.beker {
+  width: 18px;
+  height: 18px;
+}
+
 </style>
 </head>
 
@@ -117,6 +163,31 @@ Bekerwinnaar:
 
 <script>
 // ================= CONFIG =================
+
+
+const teamLogos = {
+  "AJAX": "logos/ajax.png",
+  "Az": "logos/az.png",
+  "Nec": "logos/nec.png",
+  "Twente": "logos/twente.png",
+  "Heerenveen": "logos/heerenveen.png",
+  "Kakkies": "logos/kakkies.png",
+  "PEC": "logos/pec.png",
+  "GAE": "logos/gae.png",
+  "PSV": "logos/psv.png",
+  "Groningen": "logos/groningen.png",
+  "Sparta": "logos/sparta.png",
+  "Fortuna": "logos/fortuna.png",
+  "Heracles": "logos/heracles.png",
+  "NAC": "logos/nac.png",
+  "Telstar": "logos/telstar.png",
+  "Utreg": "logos/utreg.png",
+  "Volendam": "logos/volendam.png"
+
+};
+
+
+
 const focusTeams = ["Kakkies","Nec","Twente","AJAX","Az","Heerenveen"];
 
 const startStand = {
@@ -136,23 +207,23 @@ const wedstrijden = [
   {r:30,t:"Az",u:"Heerenveen",tg:3,ug:2},
 
   // SR 31
-  {r:31,t:"Kakkies",u:"Groningen",tg:2,ug:1},
-  {r:31,t:"Twente",u:"Nec",tg:1,ug:2},
+  {r:31,t:"Kakkies",u:"Groningen",tg:1,ug:1},
+  {r:31,t:"Twente",u:"Nec",tg:2,ug:0},
   {r:31,t:"NAC",u:"AJAX",tg:1,ug:2},
   {r:31,t:"Fortuna",u:"Heerenveen",tg:1,ug:2},
   {r:31,t:"GAE",u:"Az",tg:2,ug:2},
 
   // SR 32
-  {r:32,t:"Fortuna",u:"Kakkies",tg:1,ug:2},
+  {r:32,t:"Fortuna",u:"Kakkies",tg:2,ug:2},
   {r:32,t:"Nec",u:"Telstar",tg:2,ug:1},
-  {r:32,t:"Twente",u:"Az",tg:3,ug:2},
+  {r:32,t:"Twente",u:"Az",tg:3,ug:4},
   {r:32,t:"AJAX",u:"PSV",tg:3,ug:2},
   {r:32,t:"Volendam",u:"Heerenveen",tg:1,ug:3},
 
   // SR 33
   {r:33,t:"Kakkies",u:"Az",tg:2,ug:2},
-  {r:33,t:"Groningen",u:"Nec",tg:0,ug:1},
-  {r:33,t:"Twente",u:"Sparta",tg:2,ug:1},
+  {r:33,t:"Groningen",u:"Nec",tg:1,ug:1},
+  {r:33,t:"Twente",u:"Sparta",tg:1,ug:1},
   {r:33,t:"AJAX",u:"Utreg",tg:3,ug:0},
   {r:33,t:"NAC",u:"Heerenveen",tg:0,ug:3},
 
@@ -220,7 +291,7 @@ function bepaalTickets(ranking, bekerWinnaar) {
     elTeam = bekerWinnaar;
   } else {
     // bekerwinnaar is 2e of 3e → EL gaat naar positie 4
-    elTeam = ranking.find((_, i) => i + 2 === 4)?.team;
+    elTeam = ranking[2] ? ranking[2].team : null;
   }
 
   if (elTeam) {
@@ -245,33 +316,59 @@ function bepaalTickets(ranking, bekerWinnaar) {
 
   return { tickets, playoffs };
 }
+
+
 function badge(t) {
-  if (t==="CL")  return `<span class="badge cl">Champions League</span>`;
-  if (t==="CLQ") return `<span class="badge clq">CL voorronde</span>`;
-  if (t==="EL")  return `<span class="badge el">Europa League</span>`;
-  if (t==="ELQ") return `<span class="badge elq">EL voorronde</span>`;
+  if (t === "CL") {
+    return '<span class="ticket"><img src="cl.png"> Champions League</span>';
+  }
+  if (t === "CLQ") {
+    return '<span class="ticket"><img src="clq.png"> CL voorronde</span>';
+  }
+  if (t === "EL") {
+    return '<span class="ticket"><img src="el.png"> Europa League</span>';
+  }
+  if (t === "ELQ") {
+    return '<span class="ticket"><img src="elq.png"> EL voorronde</span>';
+  }
   return "-";
 }
+
+
 
 // ================= UI =================
 function update() {
   const ronde = Number(document.getElementById("ronde").value);
   const beker = document.getElementById("beker").value || null;
-
-  // Wedstrijden
+ 
+ // Wedstrijden
   document.getElementById("matches").innerHTML =
     wedstrijden.map((w,i)=>({w,i}))
       .filter(x=>x.w.r===ronde)
       .map(x=>`
-        <div class="match">
-          <span>${x.w.t}</span>
-          <input type="number" value="${x.w.tg}"
-            onchange="updateScore(${x.i},'tg',this.value)">
-          -
-          <input type="number" value="${x.w.ug}"
-            onchange="updateScore(${x.i},'ug',this.value)">
-          <span>${x.w.u}</span>
-        </div>`).join("");
+  
+<div class="match">
+  <span class="match-team">
+    <img src="logos/${x.w.t.toLowerCase()}.png"
+         onerror="this.style.display='none'">
+    ${x.w.t}
+  </span>
+
+  <input type="number" value="${x.w.tg}"
+         onchange="updateScore(${x.i}, 'tg', this.value)">
+
+  -
+
+  <input type="number" value="${x.w.ug}"
+         onchange="updateScore(${x.i}, 'ug', this.value)">
+
+  <span class="match-team">
+    <img src="logos/${x.w.u.toLowerCase()}.png"
+         onerror="this.style.display='none'">
+    ${x.w.u}
+  </span>
+</div>
+`).join("");
 
   const stand = berekenStand(ronde);
   const ranking = focusTeams
@@ -283,15 +380,35 @@ function update() {
   document.getElementById("table").innerHTML =
     ranking.map((x,i)=>{
       const pos = i + 2;
-      return `
-        <tr class="pos${pos}">
-          <td>${pos}</td>
-          <td>${x.team}</td>
-          <td>${x.p}</td>
-          <td>${x.ds}</td>
-          <td>${tickets[x.team] ? badge(tickets[x.team]) :
-               playoffs.has(x.team) ? `<span class="badge po">Play-off Conference</span>` : "-"}</td>
-        </tr>`;
+   
+return `
+  <tr class="pos${pos}">
+    <td>${pos}</td>
+
+
+<td class="teamcell">
+  <img src="logos/${x.team.toLowerCase()}.png"
+       alt="${x.team}"
+       onerror="this.style.display='none'">
+  <span>
+    ${x.team}
+    ${x.team === beker ? '<img src="beker.png" class="beker" title="Bekerwinnaar">' : ''}
+  </span>
+</td>
+
+
+    <td>${x.p}</td>
+    <td>${x.ds}</td>
+    <td>${
+      tickets[x.team]
+        ? badge(tickets[x.team])
+        : playoffs.has(x.team)
+          ? `<span class="badge po">Play-off Conference</span>`
+          : "-"
+    }</td>
+  </tr>
+`;
+
     }).join("");
 
   document.getElementById("playoffs").innerText =
