@@ -51,7 +51,7 @@ th, td {
 .pos2 { background:#2e8b57; color:#fff; }
 .pos3 { background:#1e90ff; color:#fff; }
 .pos4 { background:#ffd700; color:#000; }
-.pos5, .pos6, .pos7 { background:#c00; color:#fff; }
+.pos5, .pos6, .pos7, .pos8, .pos9 { background:#c00; color:#fff; }
 
 /* Tickets */
 .badge {
@@ -65,9 +65,14 @@ th, td {
 
 .cl  { background:#0b6623; color:#fff; }
 .clq { background:#2e8b57; color:#fff; }
-.el  { background:#ff8c00; color:#fff; }
-.elq { background:#ffa500; color:#000; }
-.po  { background:#555; color:#fff; }
+.el {background:#ffd700;   /* GEEL - Europa League */color:#000;}
+
+.elq {background:#ffa500;   /* ORANJE - Europa League voorronde */color:#000;}
+
+.po {
+  background:#c00;
+  color:#fff;
+}
 
 .small { font-size: 13px; opacity: .9; }
 
@@ -116,6 +121,18 @@ th, td {
   height: 18px;
 }
 
+input:disabled {
+  background-color: #eee;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.beker-winnaar {
+  outline: 2px solid gold;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
+  font-weight: bold;
+}
+
 </style>
 </head>
 
@@ -141,6 +158,8 @@ Bekerwinnaar:
   <option value="Az">AZ</option>
 </select>
 
+<div id="bekerStatus" class="small"></div>
+
 <h3>Wedstrijden</h3>
 <div id="matches"></div>
 
@@ -165,6 +184,7 @@ Bekerwinnaar:
 // ================= CONFIG =================
 
 
+
 const teamLogos = {
   "AJAX": "logos/ajax.png",
   "Az": "logos/az.png",
@@ -182,13 +202,22 @@ const teamLogos = {
   "NAC": "logos/nac.png",
   "Telstar": "logos/telstar.png",
   "Utreg": "logos/utreg.png",
-  "Volendam": "logos/volendam.png"
+  "Volendam": "logos/volendam.png",
+  "Excelsior": "logos/excelsior.png"
 
 };
 
+const lockedRounds = [30];
+
+const bekerGelockt = false;   // ← zet op true na de finale
+const vasteBekerWinnaar = "Nec"; // of "Az"
 
 
-const focusTeams = ["Kakkies","Nec","Twente","AJAX","Az","Heerenveen"];
+function isLocked(round) {
+  return lockedRounds.includes(round);
+}
+
+const focusTeams = ["Kakkies","Nec","Twente","AJAX","Az","Heerenveen","Utreg","Groningen","Sparta"];
 
 const startStand = {
   Kakkies:{p:54,ds:21},
@@ -196,15 +225,23 @@ const startStand = {
   Twente:{p:50,ds:18},
   AJAX:{p:48,ds:17},
   Az:{p:45,ds:4},
-  Heerenveen:{p:44,ds:6}
+  Heerenveen:{p:44,ds:6},
+  Utreg:{p:41,ds:10},
+  Groningen:{p:41,ds:5},
+  Sparta:{p:42,ds:-12}
 };
 
 const wedstrijden = [
-  // SR 30
-  {r:30,t:"Nec",u:"Kakkies",tg:3,ug:1},
-  {r:30,t:"Twente",u:"Volendam",tg:3,ug:1},
-  {r:30,t:"Heracles",u:"AJAX",tg:1,ug:3},
-  {r:30,t:"Az",u:"Heerenveen",tg:3,ug:2},
+
+// SR 30 (DEFINITIEF)
+{r:30,t:"Az",u:"Heerenveen",tg:3,ug:0},
+{r:30,t:"Nec",u:"Kakkies",tg:1,ug:1},
+{r:30,t:"Heracles",u:"AJAX",tg:0,ug:3},
+{r:30,t:"Twente",u:"Volendam",tg:2,ug:1},
+{r:30,t:"Utreg",u:"Telstar",tg:4,ug:1},
+{r:30,t:"Groningen",u:"GAE",tg:1,ug:1},
+{r:30,t:"Sparta",u:"PSV",tg:0,ug:2},
+
 
   // SR 31
   {r:31,t:"Kakkies",u:"Groningen",tg:1,ug:1},
@@ -212,6 +249,8 @@ const wedstrijden = [
   {r:31,t:"NAC",u:"AJAX",tg:1,ug:2},
   {r:31,t:"Fortuna",u:"Heerenveen",tg:1,ug:2},
   {r:31,t:"GAE",u:"Az",tg:2,ug:2},
+  {r:31,t:"Excelsior",u:"Utreg",tg:1,ug:2},
+  {r:31,t:"Telstar",u:"Sparta",tg:0,ug:1},
 
   // SR 32
   {r:32,t:"Fortuna",u:"Kakkies",tg:2,ug:2},
@@ -219,6 +258,9 @@ const wedstrijden = [
   {r:32,t:"Twente",u:"Az",tg:3,ug:4},
   {r:32,t:"AJAX",u:"PSV",tg:3,ug:2},
   {r:32,t:"Volendam",u:"Heerenveen",tg:1,ug:3},
+  {r:32,t:"Utreg",u:"NAC",tg:3,ug:2},
+  {r:32,t:"Groningen",u:"Excelsior",tg:3,ug:2},
+  {r:32,t:"Sparta",u:"GAE",tg:1,ug:2},
 
   // SR 33
   {r:33,t:"Kakkies",u:"Az",tg:2,ug:2},
@@ -232,7 +274,11 @@ const wedstrijden = [
   {r:34,t:"Nec",u:"GAE",tg:2,ug:1},
   {r:34,t:"PSV",u:"Twente",tg:1,ug:2},
   {r:34,t:"Heerenveen",u:"AJAX",tg:1,ug:4},
-  {r:34,t:"Az",u:"NAC",tg:5,ug:0}
+  {r:34,t:"Az",u:"NAC",tg:5,ug:0},
+  {r:34,t:"Utreg",u:"Fortuna",tg:3,ug:2},
+  {r:34,t:"Heracles",u:"Groningen",tg:3,ug:2},
+  {r:34,t:"Sparta",u:"Excelsior",tg:2,ug:1}
+
 ];
 
 // ================= CORE =================
@@ -262,6 +308,8 @@ function updateScore(i,f,v) {
   update();
 }
 
+
+
 // ================= TICKETS =================
 function bepaalTickets(ranking, bekerWinnaar) {
   const tickets = {};
@@ -273,12 +321,10 @@ function bepaalTickets(ranking, bekerWinnaar) {
     if (pos === 2) tickets[team.team] = "CL";
     else if (pos === 3) tickets[team.team] = "CLQ";
     else if (pos === 4) tickets[team.team] = "ELQ";
-    else if (pos >= 5 && pos <= 7) playoffs.add(team.team);
+    else if (pos >= 5 && pos <= 9) playoffs.add(team.team);
   });
 
-  if (!bekerWinnaar) {
-    return { tickets, playoffs };
-  }
+
 
   const bekerIndex = ranking.findIndex(t => t.team === bekerWinnaar);
   const bekerPos = bekerIndex !== -1 ? bekerIndex + 2 : null;
@@ -339,7 +385,11 @@ function badge(t) {
 // ================= UI =================
 function update() {
   const ronde = Number(document.getElementById("ronde").value);
-  const beker = document.getElementById("beker").value || null;
+  
+const beker = bekerGelockt
+  ? vasteBekerWinnaar
+  : (document.getElementById("beker").value || null);
+
  
  // Wedstrijden
   document.getElementById("matches").innerHTML =
@@ -354,19 +404,27 @@ function update() {
     ${x.w.t}
   </span>
 
-  <input type="number" value="${x.w.tg}"
-         onchange="updateScore(${x.i}, 'tg', this.value)">
 
-  -
+<input type="number"
+       value="${x.w.tg}"
+       onchange="updateScore(${x.i}, 'tg', this.value)"
+       ${isLocked(x.w.r) ? 'disabled' : ''}>
 
-  <input type="number" value="${x.w.ug}"
-         onchange="updateScore(${x.i}, 'ug', this.value)">
+
+
+<input type="number"
+       value="${x.w.ug}"
+       onchange="updateScore(${x.i}, 'ug', this.value)"
+       ${isLocked(x.w.r) ? 'disabled' : ''}>
+
 
   <span class="match-team">
     <img src="logos/${x.w.u.toLowerCase()}.png"
          onerror="this.style.display='none'">
     ${x.w.u}
   </span>
+${isLocked(x.w.r) ? '<span title="Uitslag definitief">🔒</span>' : ''}
+
 </div>
 `).join("");
 
@@ -377,24 +435,50 @@ function update() {
 
   const {tickets,playoffs} = bepaalTickets(ranking, beker);
 
+console.log("DEBUG tickets:", tickets);
+console.log("DEBUG playoffs:", Array.from(playoffs));
+
+console.log("DEBUG ranking:", ranking.map(t => t.team));
+
+
   document.getElementById("table").innerHTML =
-    ranking.map((x,i)=>{
-      const pos = i + 2;
-   
-return `
-  <tr class="pos${pos}">
+  
+ranking.map((x,i) => {
+  const pos = i + 2;
+
+  let rowClass = "";
+
+  if (tickets[x.team] === "CL") {
+    rowClass = "cl";
+  } else if (tickets[x.team] === "CLQ") {
+    rowClass = "clq";
+  } else if (tickets[x.team] === "EL") {
+    rowClass = "el";
+  } else if (tickets[x.team] === "ELQ") {
+    rowClass = "elq";
+  } else if (playoffs.has(x.team)) {
+    rowClass = "po";
+  }
+
+  return `
+ <tr class="${rowClass} ${bekerGelockt && x.team === vasteBekerWinnaar ? 'beker-winnaar' : ''}">
+
     <td>${pos}</td>
 
 
+
 <td class="teamcell">
-  <img src="logos/${x.team.toLowerCase()}.png"
-       alt="${x.team}"
-       onerror="this.style.display='none'">
+  <img src="logos/${x.team.toLowerCase()}.png" onerror="this.style.display='none'">
   <span>
     ${x.team}
-    ${x.team === beker ? '<img src="beker.png" class="beker" title="Bekerwinnaar">' : ''}
+    
+${bekerGelockt && x.team === vasteBekerWinnaar
+  ? ' <span title="Bekerwinnaar definitief">🏆 <img src="beker.png" class="beker"></span>'
+  : ''}
+
   </span>
 </td>
+
 
 
     <td>${x.p}</td>
@@ -403,7 +487,7 @@ return `
       tickets[x.team]
         ? badge(tickets[x.team])
         : playoffs.has(x.team)
-          ? `<span class="badge po">Play-off Conference</span>`
+           ? '<span class="ticket"><img src="po.png"> Play-offs Conference League</span>'
           : "-"
     }</td>
   </tr>
@@ -413,6 +497,21 @@ return `
 
   document.getElementById("playoffs").innerText =
     Array.from(playoffs).join(", ") || "—";
+}
+
+const bekerSelect = document.getElementById("beker");
+
+if (bekerGelockt) {
+  bekerSelect.value = vasteBekerWinnaar;
+  bekerSelect.disabled = true;
+}
+
+const bekerStatus = document.getElementById("bekerStatus");
+
+if (bekerGelockt) {
+  bekerStatus.innerText = `Bekerfinale gespeeld – winnaar definitief: ${vasteBekerWinnaar}`;
+} else {
+  bekerStatus.innerText = "";
 }
 
 update();
