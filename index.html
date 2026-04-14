@@ -140,13 +140,7 @@ input:disabled {
   font-weight: bold;
 }
 
-#bekerBanner {
-  margin: 8px 0 12px 0;
-  padding: 6px 10px;
-  background: #fff8dc;
-  border-left: 4px solid gold;
-  font-weight: bold;
-}
+
 
 .tiebreak-star {
   color: gold;
@@ -165,7 +159,7 @@ input:disabled {
 
 <h2>Eredivisie Simulator</h2>
 
-<div id="bekerBanner" class="small"></div>
+
 Speelronde:
 <select id="ronde" onchange="update()">
   <option value="30">30</option>
@@ -207,6 +201,15 @@ Bekerwinnaar:
 <script>
 // ================= CONFIG =================
 
+
+function goalSelect(value, onChange, locked) {
+  let html = `<select onchange="${onChange}" ${locked ? 'disabled' : ''}>`;
+  for (let i = 0; i <= 9; i++) {
+    html += `<option value="${i}" ${i === value ? 'selected' : ''}>${i}</option>`;
+  }
+  html += `</select>`;
+  return html;
+}
 
 
 const teamLogos = {
@@ -431,17 +434,19 @@ const beker = bekerGelockt
   </span>
 
 
-<input type="number"
-       value="${x.w.tg}"
-       onchange="updateScore(${x.i}, 'tg', this.value)"
-       ${isLocked(x.w.r) ? 'disabled' : ''}>
+
+${goalSelect(
+  x.w.tg,
+  `updateScore(${x.i}, 'tg', this.value)`,
+  isLocked(x.w.r)
+)}
 
 
-
-<input type="number"
-       value="${x.w.ug}"
-       onchange="updateScore(${x.i}, 'ug', this.value)"
-       ${isLocked(x.w.r) ? 'disabled' : ''}>
+${goalSelect(
+  x.w.ug,
+  `updateScore(${x.i}, 'ug', this.value)`,
+  isLocked(x.w.r)
+)}
 
 
   <span class="match-team">
@@ -559,20 +564,19 @@ if (bekerGelockt) {
 const bekerStatus = document.getElementById("bekerStatus");
 
 if (bekerGelockt) {
-  bekerStatus.innerText = `Bekerfinale gespeeld – winnaar definitief: ${vasteBekerWinnaar}`;
-} else {
+  bekerStatus.innerHTML =
+    `Bekerfinale gespeeld – winnaar definitief: ${vasteBekerWinnaar.toUpperCase()}
+     🏆
+     <img src="logos/${vasteBekerWinnaar.toLowerCase()}.png"
+          style="width:18px; vertical-align:middle;"
+          onerror="this.style.display='none'">
+     <img src="beker.png"
+          style="width:18px; vertical-align:middle;">`;
+}
+ else {
   bekerStatus.innerText = "";
 }
 
-
-const banner = document.getElementById("bekerBanner");
-
-if (bekerGelockt) {
-  banner.innerHTML =
-    ' <img src="beker.png"ekerwinnaar: ' + vasteBekerWinnaar;
-} else {
-  banner.innerHTML = "";
-}
 
 
 update();
