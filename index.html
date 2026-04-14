@@ -127,11 +127,34 @@ input:disabled {
   cursor: not-allowed;
 }
 
+
+@keyframes bekerPulse {
+  0%   { box-shadow: 0 0 6px rgba(255, 215, 0, 0.5); }
+  50%  { box-shadow: 0 0 14px rgba(255, 215, 0, 0.9); }
+  100% { box-shadow: 0 0 6px rgba(255, 215, 0, 0.5); }
+}
+
 .beker-winnaar {
   outline: 2px solid gold;
-  box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
+  animation: bekerPulse 2.5s infinite;
   font-weight: bold;
 }
+
+#bekerBanner {
+  margin: 8px 0 12px 0;
+  padding: 6px 10px;
+  background: #fff8dc;
+  border-left: 4px solid gold;
+  font-weight: bold;
+}
+
+.tiebreak-star {
+  color: gold;
+  font-size: 14px;
+  margin-left: 4px;
+  cursor: help;
+}
+
 
 </style>
 </head>
@@ -142,6 +165,7 @@ input:disabled {
 
 <h2>Eredivisie Simulator</h2>
 
+<div id="bekerBanner" class="small"></div>
 Speelronde:
 <select id="ronde" onchange="update()">
   <option value="30">30</option>
@@ -209,7 +233,7 @@ const teamLogos = {
 
 const lockedRounds = [30];
 
-const bekerGelockt = false;   // ← zet op true na de finale
+const bekerGelockt = true;   // ← zet op true na de finale
 const vasteBekerWinnaar = "Nec"; // of "Az"
 
 
@@ -220,15 +244,15 @@ function isLocked(round) {
 const focusTeams = ["Kakkies","Nec","Twente","AJAX","Az","Heerenveen","Utreg","Groningen","Sparta"];
 
 const startStand = {
-  Kakkies:{p:54,ds:21},
-  Nec:{p:53,ds:24},
-  Twente:{p:50,ds:18},
-  AJAX:{p:48,ds:17},
-  Az:{p:45,ds:4},
-  Heerenveen:{p:44,ds:6},
-  Utreg:{p:41,ds:10},
-  Groningen:{p:41,ds:5},
-  Sparta:{p:42,ds:-12}
+  Kakkies:{p:54,ds:21,gf:61},
+  Nec:{p:53,ds:24,gf:71},
+  Twente:{p:50,ds:18,gf:49},
+  AJAX:{p:48,ds:17,gf:54},
+  Az:{p:45,ds:4,gf:49},
+  Heerenveen:{p:44,ds:6,gf:53},
+  Utreg:{p:41,ds:10,gf:45},
+  Groningen:{p:41,ds:5,gf:41},
+  Sparta:{p:42,ds:-12,gf:35}
 };
 
 const wedstrijden = [
@@ -290,11 +314,13 @@ function berekenStand(tot) {
     const tg = Number(w.tg), ug = Number(w.ug);
 
     if (s[w.t]) {
+      s[w.t].gf += tg;  
       s[w.t].ds += tg - ug;
       if (tg > ug) s[w.t].p += 3;
       if (tg === ug) s[w.t].p += 1;
     }
     if (s[w.u]) {
+      s[w.u].gf += ug;
       s[w.u].ds += ug - tg;
       if (ug > tg) s[w.u].p += 3;
       if (tg === ug) s[w.u].p += 1;
@@ -431,7 +457,13 @@ ${isLocked(x.w.r) ? '<span title="Uitslag definitief">🔒</span>' : ''}
   const stand = berekenStand(ronde);
   const ranking = focusTeams
     .map(t=>({team:t,...stand[t]}))
-    .sort((a,b)=>b.p-a.p||b.ds-a.ds);
+    
+.sort((a,b)=> 
+  b.p  - a.p  ||
+  b.ds - a.ds ||
+  b.gf - a.gf
+);
+
 
   const {tickets,playoffs} = bepaalTickets(ranking, beker);
 
@@ -482,7 +514,25 @@ ${bekerGelockt && x.team === vasteBekerWinnaar
 
 
     <td>${x.p}</td>
-    <td>${x.ds}</td>
+ 
+
+<td>
+  ${x.ds}
+  ${
+    ranking.some(o =>
+      o.team !== x.team &&
+      o.p === x.p &&
+      o.ds === x.ds &&
+      x.gf > o.gf &&
+      ranking.indexOf(x) < ranking.indexOf(o)
+    )
+      ? '<span class="tiebreak-star" title="Hoger geëindigd dankzij meer doelpunten gescoord">★</span>'
+      : ''
+  }
+</td>
+
+
+
     <td>${
       tickets[x.team]
         ? badge(tickets[x.team])
@@ -513,6 +563,17 @@ if (bekerGelockt) {
 } else {
   bekerStatus.innerText = "";
 }
+
+
+const banner = document.getElementById("bekerBanner");
+
+if (bekerGelockt) {
+  banner.innerHTML =
+    ' <img src="beker.png"ekerwinnaar: ' + vasteBekerWinnaar;
+} else {
+  banner.innerHTML = "";
+}
+
 
 update();
 </script>
