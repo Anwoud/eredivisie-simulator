@@ -181,7 +181,7 @@ Bekerwinnaar:
 <h3>Wedstrijden</h3>
 <div id="matches"></div>
 
-<h3>Stand (posities 2 t/m 7)</h3>
+<h3>Stand (posities 3 t/m 10)</h3>
 <table>
 <thead>
 <tr>
@@ -481,10 +481,23 @@ console.log("DEBUG ranking:", ranking.map(t => t.team));
 
   document.getElementById("table").innerHTML =
   
+
 ranking
-    .filter((x, i) => i !== 0)
-    .map((x,i) => {
-  const pos = i + 2;
+  .map((x, i) => ({ x, i }))        // ✅ bewaar originele index
+  .filter(obj => obj.i !== 0)       // ✅ verwijder plek 2
+  .map(obj => {
+    const x = obj.x;
+    const pos = obj.i + 2;          // ✅ originele positie (2,3,4,...)
+
+    return `
+      <tr>
+        <td>${pos}</td>
+        ...
+      </tr>
+    `;
+  })
+  .join("");
+
 
   let rowClass = "";
 
