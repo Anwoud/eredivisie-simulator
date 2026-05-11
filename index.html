@@ -346,9 +346,10 @@ function bepaalTickets(ranking, bekerWinnaar) {
 
   // 1. Basis op competitie
   ranking.forEach((team, i) => {
-    const pos = i + 2;
-    if (pos === 2) tickets[team.team] = "CL";
-    else if (pos === 3) tickets[team.team] = "CLQ";
+    const pos = i + 3;
+   // if (pos === 2) tickets[team.team] = "CL";
+    // else 
+    if (pos === 3) tickets[team.team] = "CLQ";
     else if (pos === 4) tickets[team.team] = "ELQ";
     else if (pos >= 5 && pos <= 9) playoffs.add(team.team);
   });
@@ -481,7 +482,7 @@ console.log("DEBUG ranking:", ranking.map(t => t.team));
   document.getElementById("table").innerHTML =
   
 ranking.map((x,i) => {
-  const pos = i + 2;
+  const pos = i + 3;
 
   let rowClass = "";
 
