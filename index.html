@@ -472,20 +472,16 @@ ${isLocked(x.w.r) ? '<span title="Uitslag definitief">🔒</span>' : ''}
 
 
   const {tickets,playoffs} = bepaalTickets(ranking, beker);
-
+const zichtbareRanking = ranking.filter((x, i) => i !== 0);
 console.log("DEBUG tickets:", tickets);
 console.log("DEBUG playoffs:", Array.from(playoffs));
 
 console.log("DEBUG ranking:", ranking.map(t => t.team));
 
 
-  document.getElementById("table").innerHTML =
-  
-
-
-ranking
-  .filter((x, i) => i !== 0)
+document.getElementById("table").innerHTML = zichtbareRanking
   .map((x, i) => {
+
 const pos = i + 3;
 
 
@@ -530,13 +526,14 @@ ${bekerGelockt && x.team === vasteBekerWinnaar
 <td>
   ${x.ds}
   ${
-    ranking.some(o =>
-      o.team !== x.team &&
-      o.p === x.p &&
-      o.ds === x.ds &&
-      x.gf > o.gf &&
-      ranking.indexOf(x) < ranking.indexOf(o)
-    )
+   
+ranking.some(o =>
+  o.team !== x.team &&
+  o.p === x.p &&
+  o.ds === x.ds &&
+  x.gf > o.gf
+)
+
       ? '<span class="tiebreak-star" title="Hoger geëindigd dankzij meer doelpunten gescoord">★</span>'
       : ''
   }
