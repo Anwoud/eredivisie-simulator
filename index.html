@@ -346,7 +346,7 @@ function bepaalTickets(ranking, bekerWinnaar) {
 
   // 1. Basis op competitie
   ranking.forEach((team, i) => {
-    const pos = i + 3;
+    const pos = i + 2;
    // if (pos === 2) tickets[team.team] = "CL";
     // else 
     if (pos === 3) tickets[team.team] = "CLQ";
@@ -481,8 +481,10 @@ console.log("DEBUG ranking:", ranking.map(t => t.team));
 
   document.getElementById("table").innerHTML =
   
-ranking.map((x,i) => {
-  const pos = i + 3;
+ranking
+    .filter((x, i) => i !== 0)
+    .map((x,i) => {
+  const pos = i + 2;
 
   let rowClass = "";
 
